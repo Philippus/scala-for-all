@@ -8,9 +8,9 @@ _sbt starten_: `sbt`
 
 _console starten_: `console`
 
-_REPLesent-presentatie starten_: `val repl = init($intp); import repl._; f`
+_presentatie starten_: `val repl = init($intp); import repl._; f`
 
-[PDF-versie](pdf/scala_for_all_exception_twente_20170216.pdf)
+Als alternatief heb ik ook een [PDF-versie](pdf/scala_for_all_exception_twente_20170216.pdf) gemaakt.
 
 Referenties op slides 89 en 90:
 
