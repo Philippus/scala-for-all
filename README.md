@@ -1,6 +1,6 @@
 # Scala for all - property-based testing met ScalaCheck
 
-[REPLesent](https://github.com/marconilanna/REPLesent)-presentatie gebruikt bij Exception Twente op 16 februari 2017.
+[REPLesent](https://github.com/marconilanna/REPLesent)-presentatie voor Exception Twente op 16 februari 2017.
 
 Scala en sbt zijn nodig om de presentatie te starten.
 
