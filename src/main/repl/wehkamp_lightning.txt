@@ -1,0 +1,528 @@
+| \*Scala for all
+
+| property-based testing met ScalaCheck ⚡
+
+| \* Philippus Baalman
+
+| Wehkamp - 10 maart 2017
+---
+| An order with order lines
+---
+```
+case class Order(
+    id: String,
+    orderTime: DateTime,
+    orderState: String,
+    customerType: Option[CustomerType],
+    orderLines: List[OrderLine]) {
+  def addOrderLine(orderLine: OrderLine): Order = {
+    this.copy(orderLines = orderLine :: orderLines)
+  }
+  def total: Int = orderLines.map(x => x.total).sum
+}
+
+sealed abstract class CustomerType(override val toString: String)
+case object NewCustomer extends CustomerType("new")
+case object ExistingCustomer extends CustomerType("existing")
+
+case class OrderLine(
+    id: Option[String],
+    productId: String,
+    productCategory: String,
+    quantity: Int,
+    netValue: Int) {
+  def total: Int = quantity * netValue
+}
+```
+---
+val testOrderLine = OrderLine(Option("a"), "b", "000", 1, 2)
+
+val testOrder = Order(
+  "a", DateTimeSupport.stringToDateTime("20161209T10:50:24.091Z"), "ordered",
+  Some(NewCustomer), List(testOrderLine))
+
+"Order" should {
+  "be able to add an order line to an order" in {
+    testOrder.addOrderLine(testOrderLine).orderLines.length
+    shouldEqual testOrder.orderLines.length + 1
+  }
+}
+---
+"Order" should {
+  "calculate total correctly" in {
+    testOrder.total shouldEqual testOrderLine.total
+  }
+}
+---
+val testOrderWithoutOrderLines = Order(
+  "a", DateTimeSupport.stringToDateTime("20161209T10:50:24.091Z"), "ordered",
+  Some(NewCustomer), List())
+---
+"Order" should {
+  "be able to add an order line to an order" in {
+    testOrder.addOrderLine(testOrderLine).orderLines.length
+    shouldEqual testOrder.orderLines.length + 1
+  }
+
+  "be able to add an order line to an order without order lines" in {
+    testOrderWithoutOrderLines.addOrderLine(testOrderLine).orderLines.length
+    shouldEqual 1
+  }
+
+  "be able to add an order line to an order" in {
+    testOrder.addOrderLine(testOrderLine).orderLines.length
+    shouldEqual testOrder.orderLines.length + 1
+  }
+
+  "calculate total correctly for orders without order lines" in {
+    testOrderWithoutOrderLines.total shouldEqual 0
+  }
+}
+---
+val testOrderLine = OrderLine(Option("a"), "b", "000", 1, 2)
+
+val jsonOrderLine =
+  """
+    {"id":"a","productId":"b","productCategory":"000","quantity":1,"netValue":2}
+  """.parseJson
+
+"OrderLineMarshalling" should {
+  "correctly serialize an order line" in {
+    jsonOrderLine shouldEqual testOrderLine.toJson
+  }
+  "correctly deserialize an order line" in {
+    jsonOrderLine.convertTo[OrderLine] shouldEqual testOrderLine
+  }
+}
+---
+val testOrder = Order(
+  "a", DateTimeSupport.stringToDateTime("20161209T10:50:24.091Z"), "ordered",
+  Some(NewCustomer), List(testOrderLine))
+
+val jsonOrder =
+  """
+    {"orderLines":[{"id":"a","productId":"b","productCategory":"000","quantity":1,
+    "netValue":2}],"id":"a","orderTime":"20161209T10:50:24.091Z",
+    "orderState":"ordered","customerType":"new"}
+  """.parseJson
+
+"OrderMarshalling" should {
+  "correctly serialize an order" in {
+    jsonOrder shouldEqual testOrder.toJson
+  }
+  "correctly deserialize an order" in {
+    jsonOrder.convertTo[Order] shouldEqual testOrder
+  }
+}
+---
+val testOrder = Order(
+  "a", DateTimeSupport.stringToDateTime("20161209T10:50:24.091Z"), "ordered",
+  Some(NewCustomer), List(testOrderLine))
+
+val jsonOrder =
+  """
+    {"orderLines":[{"id":"a","productId":"b","productCategory":"000","quantity":1,
+    "netValue":2}],"id":"a","orderTime":"20161209T10:50:24.091Z",
+    "orderState":"ordered","customerType":"new"}
+  """.parseJson
+
+val testOrderWithoutOrderLines = Order(
+  "a", DateTimeSupport.stringToDateTime("20161209T10:50:24.091Z"), "ordered",
+  Some(NewCustomer), List())
+
+val jsonOrderWithoutOrderLines =
+  """
+    {"orderLines":[],"id":"a","orderTime":"20161209T10:50:24.091Z",
+    "orderState":"ordered","customerType":"new"}
+  """.parseJson
+---
+"OrderMarshalling" should {
+  "correctly serialize an order" in {
+    jsonOrder shouldEqual testOrder.toJson
+    }
+  "correctly deserialize an order" in {
+    jsonOrder.convertTo[Order] shouldEqual testOrder
+  }
+  "correctly serialize an order without order lines" in {
+    jsonOrderWithOrderLines shouldEqual testOrderWithoutOrderLines.toJson
+  }
+  "correctly deserialize an order without order lines" in {
+    jsonOrderWithOrderLines.convertTo[Order] shouldEqual testOrderWithoutOrderLines
+  }
+}
+---
+| Bij property-based testing definieer je eigenschappen die gelden voor de
+| output van je code, gebaseerd op de input.
+
+| \*Properties
+---
+```
+import org.scalacheck.Prop._
+
+val propInt = forAll {
+  i: Int =>
+    i + 0 == i
+}
+```
+---
+```
+propInt.check
+```
+---
+```
+forAll {
+  (a: String, b: String) =>
+    (a + b).endsWith(b)
+}.check
+```
+---
+```
+forAll {
+  l: List[Int] =>
+    l.reverse == l
+}.check
+```
+---
+```
+forAll {
+  l: List[String] =>
+    l.reverse.reverse == l
+}.check
+```
+---
+```
+forAll {
+  (i: Int, j: Int) =>
+    i + j == j + i
+}.check
+```
+---
+```
+forAll {
+  s: String =>
+    s.toUpperCase.toLowerCase == s.toLowerCase
+}.check
+```
+---
+```
+forAll {
+  i: Int =>
+    Math.abs(i) >= 0
+}.check
+```
+---
+| Bij property-based testing definieer je eigenschappen die gelden voor de
+| output van je code, gebaseerd op de input,
+| deze worden geverifieerd voor heel veel verschillende gegeneerde input.
+
+| \*Generators
+---
+```
+forAll {
+  i: Int =>
+    collect(i) {
+      Math.abs(i) >= 0
+    }
+}.check
+```
+---
+```
+import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.Gen
+
+arbitrary[String].sample
+```
+---
+```
+arbitrary[Int].sample
+```
+---
+```
+arbitrary[(Int, String)].sample
+```
+---
+```
+Gen.listOfN(3, arbitrary[Int]).sample
+```
+---
+```
+Gen.posNum[Int].sample
+```
+---
+```
+Gen.alphaStr.sample
+```
+---
+```
+forAll(Gen.alphaStr) {
+  s: String =>
+    s.toUpperCase.toLowerCase == s.toLowerCase
+}.check
+```
+---
+| Bij property-based testing definieer je eigenschappen die gelden voor de
+| output van je code, gebaseerd op de input,
+| deze worden geverifieerd voor heel veel verschillende gegeneerde input,
+| als er een fout gevonden wordt dan wordt er geprobeerd een minimaal
+| tegenvoorbeeld te vinden.
+
+| \*Shrinking
+---
+```
+forAll {
+  l: List[Int] =>
+    l.reverse == l
+}.check
+```
+---
+```
+forAll {
+  s: String =>
+    println(s)
+    s.toUpperCase.toLowerCase == s.toLowerCase
+}.check
+```
+---
+| An order revisited
+---
+```
+case class Order(
+    id: String,
+    orderTime: org.joda.time.DateTime,
+    orderState: String,
+    customerType: Option[CustomerType],
+    orderLines: List[OrderLine]) {
+  def addOrderLine(orderLine: OrderLine): Order = {
+    this.copy(orderLines = orderLine :: orderLines)
+  }
+  def total: Int = orderLines.map(x => x.total).sum
+}
+
+sealed abstract class CustomerType(override val toString: String)
+case object NewCustomer extends CustomerType("new")
+case object ExistingCustomer extends CustomerType("existing")
+
+case class OrderLine(
+    id: Option[String],
+    productId: String,
+    productCategory: String,
+    quantity: Int,
+    netValue: Int) {
+  def total: Int = quantity * netValue
+}
+```
+---
+case class OrderLine(
+    \b\*id: Option[String]\s,
+    productId: String,
+    productCategory: String,
+    quantity: Int,
+    netValue: Int)
+
+```
+import org.scalacheck.Gen._
+
+def genOrderLineId: Gen[String] = for {
+  left ← Gen.listOfN(1, Gen.numChar).map(_.mkString)
+  middle ← Gen.const("x")
+  right ← Gen.listOfN(5, Gen.numChar).map(_.mkString)
+} yield List(left, middle, right).mkString
+```
+---
+```
+genOrderLineId.sample
+```
+---
+case class OrderLine(
+    \b\*id: Option[String]\s,
+    productId: String,
+    productCategory: String,
+    quantity: Int,
+    netValue: Int)
+
+def genOrderLine: Gen[OrderLine] = for {
+  \b\*id ← Gen\b\*.option(genOrderLineId)
+  productId ← Gen.resize(3, Gen.alphaStr)
+  productCategory ← Gen.resize(5, Gen.alphaStr)
+  quantity ← Gen.choose(1, 10)
+  netValue ← Gen.choose(0, 1000)
+} yield OrderLine(id, productId, productCategory, quantity, netValue)
+---
+case class OrderLine(
+    id: Option[String],
+    \b\*productId: String\s,
+    productCategory: String,
+    quantity: Int,
+    netValue: Int)
+
+def genOrderLine: Gen[OrderLine] = for {
+  id ← Gen.option(genOrderLineId)
+  \b\*productId ← Gen\b\*.resize(3\b\*, Gen\b\*.alphaStr)
+  productCategory ← Gen.resize(5, Gen.alphaStr)
+  quantity ← Gen.choose(1, 10)
+  netValue ← Gen.choose(0, 1000)
+} yield OrderLine(id, productId, productCategory, quantity, netValue)
+---
+case class OrderLine(
+    id: Option[String],
+    productId: String,
+    \b\*productCategory: String\s,
+    quantity: Int,
+    netValue: Int)
+
+def genOrderLine: Gen[OrderLine] = for {
+  id ← Gen.option(genOrderLineId)
+  productId ← Gen.resize(3, Gen.alphaStr)
+  \b\*productCategory ← Gen\b\*.resize(5\b\*, Gen\b\*.alphaStr)
+  quantity ← Gen.choose(1, 10)
+  netValue ← Gen.choose(0, 1000)
+} yield OrderLine(id, productId, productCategory, quantity, netValue)
+---
+case class OrderLine(
+    id: Option[String],
+    productId: String,
+    productCategory: String,
+    \b\*quantity: Int\s,
+    netValue: Int)
+
+def genOrderLine: Gen[OrderLine] = for {
+  id ← Gen.option(genOrderLineId)
+  productId ← Gen.resize(3, Gen.alphaStr)
+  productCategory ← Gen.resize(5, Gen.alphaStr)
+  \b\*quantity ← Gen\b\*.choose(1\b\*, 10\b\*)
+  netValue ← Gen.choose(0, 1000)
+} yield OrderLine(id, productId, productCategory, quantity, netValue)
+---
+case class OrderLine(
+    id: Option[String],
+    productId: String,
+    productCategory: String,
+    quantity: Int,
+    \b\*netValue: Int\s)
+
+def genOrderLine: Gen[OrderLine] = for {
+  id ← Gen.option(genOrderLineId)
+  productId ← Gen.resize(3, Gen.alphaStr)
+  productCategory ← Gen.resize(5, Gen.alphaStr)
+  quantity ← Gen.choose(1, 10)
+  \b\*netValue ← Gen\b\*.choose(0\b\*, 1000\b\*)
+} yield OrderLine(id, productId, productCategory, quantity, netValue)
+---
+\b\*case class OrderLine(
+    \b\*id: Option[String],
+    \b\*productId: String,
+    \b\*productCategory: String,
+    \b\*quantity: Int,
+    \b\*netValue: Int)
+
+```
+def genOrderLine: Gen[OrderLine] = for {
+  id ← Gen.option(genOrderLineId)
+  productId ← Gen.resize(3, Gen.alphaStr)
+  productCategory ← Gen.resize(5, Gen.alphaStr)
+  quantity ← Gen.choose(1, 10)
+  netValue ← Gen.choose(0, 1000)
+} yield OrderLine(id, productId, productCategory, quantity, netValue)
+```
+---
+```
+genOrderLine.sample
+```
+---
+case class Order(
+    id: String,
+    \b\*orderTime: DateTime\s,
+    orderState: String,
+    customerType: Option[CustomerType],
+    orderLines: List[OrderLine])
+
+```
+import org.joda.time.{DateTime, DateTimeZone}
+
+def genOrderTime: Gen[DateTime] = {
+  val start = new DateTime(2017, 1, 1, 0, 0, 0, 0, DateTimeZone.UTC).getMillis
+  val end = new DateTime(2018, 1, 1, 0, 0, 0, 0, DateTimeZone.UTC).getMillis
+  Gen.choose(start, end).map(new DateTime(_))
+}
+```
+---
+```
+genOrderTime.sample
+```
+---
+case class Order(
+    id: String,
+    orderTime: DateTime,
+    \b\*orderState: String\s,
+    customerType: Option[CustomerType],
+    orderLines: List[OrderLine])
+
+```
+def genOrderState = oneOf("ordered", "packaged", "shipped", "delivered")
+```
+---
+```
+genOrderState.sample
+```
+---
+case class Order(
+    id: String,
+    orderTime: DateTime,
+    orderState: String,
+    \b\*customerType: Option[CustomerType]\s,
+    orderLines: List[OrderLine])
+
+sealed abstract class CustomerType(override val toString: String)
+case object NewCustomer extends CustomerType("new")
+case object ExistingCustomer extends CustomerType("existing")
+
+```
+def genCustomerType: Gen[CustomerType] = oneOf(NewCustomer, ExistingCustomer)
+```
+---
+```
+genCustomerType.sample
+```
+---
+\b\*case class Order(
+    \b\*id: String,
+    \b\*orderTime: DateTime,
+    \b\*orderState: String,
+    \b\*customerType: Option[CustomerType],
+    \b\*orderLines: List[OrderLine])
+
+```
+def genOrder: Gen[Order] = for {
+  id ← Gen.listOfN(8, Gen.numChar).map(_.mkString)
+  orderTime ← genOrderTime
+  orderState ← genOrderState
+  customerType ← Gen.option(genCustomerType)
+  orderLines ← Gen.resize(5, listOf(genOrderLine))
+} yield Order(id, orderTime, orderState, customerType, orderLines)
+```
+---
+```
+genOrder.sample
+```
+---
+```
+forAll(genOrder, genOrderLine) {
+  (o: Order, ol: OrderLine) =>
+    o.addOrderLine(ol).orderLines.length == o.orderLines.length + 1
+}.check
+```
+---
+```
+forAll(genOrder, genOrderLine) {
+  (o: Order, ol: OrderLine) =>
+    o.total + ol.total == o.addOrderLine(ol).total
+}.check
+```
+---
+val propSerializationRoundtrip = forAll {
+  order: Order =>
+    order == order.toJson.convertTo[Order]
+}
+---
+| "Program testing can be used to show the presence of bugs,
+| but never to show their absence!" -- Edsger W. Dijkstra

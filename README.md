@@ -21,3 +21,11 @@ Referenties op slides 89 en 90:
 * [Primes sieve](https://stackoverflow.com/questions/9711785/find-prime-numbers-using-scala-help-me-to-improve)
 * [Binary search bug](https://research.googleblog.com/2006/06/extra-extra-read-all-about-it-nearly.html)
 * [Agile Meetup Twente](https://www.meetup.com/Agile-Meetup-Twente)
+
+## Lightning talk
+
+Er is ook een korte variant beschikbaar, gebruikt bij Wehkamp op 10 maart 2017.
+
+_lightning talk starten_: `val repl = initL($intp); import repl._; f`
+
+Deze is ook beschikbaar als [PDF-versie](pdf/lightning_talk_wehkamp_20170310.pdf).
