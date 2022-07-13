@@ -21,9 +21,15 @@ initialCommands in console :=
     |    import repl._
     |    repl
     |  }
-    |
+    |  def initJ(intp: scala.tools.nsc.interpreter.IMain) = {
+    |    val repl = REPLesent(slideCounter=true, slideTotal=true, input="src/main/repl/wehkamp_jvm_guild.txt", intp=intp)
+    |    import repl._
+    |    repl
+    |  }
     | println("To start presentation:")
     | println("val repl = init($intp); import repl._; f")
     | println("To start lightning talk:")
     | println("val repl = initL($intp); import repl._; f")
+    | println("To start JVM Guild talk:")
+    | println("val repl = initJ($intp); import repl._; f")
   """.stripMargin
