@@ -5,7 +5,7 @@ version := "1.0"
 scalaVersion := "2.13.16"
 
 libraryDependencies ++= Seq(
-  "joda-time" % "joda-time" % "2.13.1",
+  "joda-time" % "joda-time" % "2.14.0",
   "org.scalacheck" %% "scalacheck" % "1.18.1",
   "org.scala-lang" % "scala-compiler" % scalaVersion.value
 )
