@@ -2,7 +2,7 @@ name := "Scala for all - property-based testing met ScalaCheck"
 
 version := "1.0"
 
-scalaVersion := "2.13.16"
+scalaVersion := "2.13.17"
 
 libraryDependencies ++= Seq(
   "joda-time" % "joda-time" % "2.14.0",
